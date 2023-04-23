@@ -1,11 +1,16 @@
 ﻿using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
 using Microsoft.eShopWeb.ApplicationCore.Entities.BasketAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Entities.OrderAggregate;
 using Microsoft.eShopWeb.ApplicationCore.Interfaces;
 using Microsoft.eShopWeb.ApplicationCore.Specifications;
+using Microsoft.Extensions.Configuration;
 
 namespace Microsoft.eShopWeb.ApplicationCore.Services;
 
@@ -15,16 +20,23 @@ public class OrderService : IOrderService
     private readonly IUriComposer _uriComposer;
     private readonly IRepository<Basket> _basketRepository;
     private readonly IRepository<CatalogItem> _itemRepository;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IConfiguration _configuration;
 
     public OrderService(IRepository<Basket> basketRepository,
         IRepository<CatalogItem> itemRepository,
         IRepository<Order> orderRepository,
-        IUriComposer uriComposer)
+        IUriComposer uriComposer,
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration
+        )
     {
         _orderRepository = orderRepository;
         _uriComposer = uriComposer;
         _basketRepository = basketRepository;
         _itemRepository = itemRepository;
+        _httpClientFactory = httpClientFactory;
+        _configuration = configuration;
     }
 
     public async Task CreateOrderAsync(int basketId, Address shippingAddress)
@@ -48,6 +60,15 @@ public class OrderService : IOrderService
 
         var order = new Order(basket.BuyerId, shippingAddress, items);
 
-        await _orderRepository.AddAsync(order);
+        var submittedOrder = await _orderRepository.AddAsync(order);
+        if(submittedOrder != null)
+        {
+            var mt = new MediaTypeWithQualityHeaderValue("application/json");
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Accept.Add(mt);
+            var request = new HttpRequestMessage(HttpMethod.Post, _configuration["functionUrl"]);
+            request.Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(order));
+            await client.SendAsync(request);
+        }
     }
 }

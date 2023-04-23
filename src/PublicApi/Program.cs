@@ -18,13 +18,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.ApplicationInsights;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MinimalApi.Endpoint.Configurations.Extensions;
 using MinimalApi.Endpoint.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddEndpoints();
 
 // Use to force loading of appsettings.json of test project
@@ -80,6 +80,7 @@ builder.Services.AddCors(options =>
             corsPolicyBuilder.AllowAnyHeader();
         });
 });
+//builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["ApplicationInsights:ConnectionString"]);
 
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
@@ -122,6 +123,8 @@ builder.Services.AddSwaggerGen(c =>
             });
 });
 
+
+//builder.Logging.AddFilter<ApplicationInsightsLoggerProvider>("Test", LogLevel.Trace);
 var app = builder.Build();
 
 app.Logger.LogInformation("PublicApi App created...");
