@@ -26,14 +26,14 @@ public class CatalogItemListPagedEndpoint : IEndpoint<IResult, ListPagedCatalogI
     private readonly IUriComposer _uriComposer;
     private readonly IMapper _mapper;
     private readonly Microsoft.Extensions.Logging.ILogger _logger;
-    private readonly TelemetryClient _telemetryClient;
+    //private readonly TelemetryClient _telemetryClient;
 
-    public CatalogItemListPagedEndpoint(IUriComposer uriComposer, IMapper mapper, Microsoft.Extensions.Logging.ILogger<CatalogItemListPagedEndpoint> logger, TelemetryClient telemetryClient)
+    public CatalogItemListPagedEndpoint(IUriComposer uriComposer, IMapper mapper, Microsoft.Extensions.Logging.ILogger<CatalogItemListPagedEndpoint> logger)//, TelemetryClient telemetryClient)
     {
         _uriComposer = uriComposer;
         _mapper = mapper;
         _logger = logger;
-        _telemetryClient = telemetryClient;
+        //_telemetryClient = telemetryClient;
     }
 
     public void AddRoute(IEndpointRouteBuilder app)

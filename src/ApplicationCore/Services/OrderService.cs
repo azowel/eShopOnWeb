@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Ardalis.GuardClauses;
+using Azure.Messaging.ServiceBus;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.eShopWeb.ApplicationCore.Entities;
@@ -63,12 +64,26 @@ public class OrderService : IOrderService
         var submittedOrder = await _orderRepository.AddAsync(order);
         if(submittedOrder != null)
         {
-            var mt = new MediaTypeWithQualityHeaderValue("application/json");
-            var client = _httpClientFactory.CreateClient();
-            client.DefaultRequestHeaders.Accept.Add(mt);
-            var request = new HttpRequestMessage(HttpMethod.Post, _configuration["functionUrl"]);
-            request.Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(order));
-            await client.SendAsync(request);
+            string? sbConnectionString = _configuration["serviceBusConnectionString"];
+            await using var client = new ServiceBusClient(sbConnectionString);
+            string? queuName = _configuration["queueName"];
+            ServiceBusSender sender = client.CreateSender(queuName);
+            try
+            {
+                var message = new ServiceBusMessage(System.Text.Json.JsonSerializer.Serialize(order));
+                await sender.SendMessageAsync(message);
+            }
+            finally
+            {
+                await sender.DisposeAsync();
+                await client.DisposeAsync();
+            }
+            //var mt = new MediaTypeWithQualityHeaderValue("application/json");
+            //var client = _httpClientFactory.CreateClient();
+            //client.DefaultRequestHeaders.Accept.Add(mt);
+            //var request = new HttpRequestMessage(HttpMethod.Post, _configuration["functionUrl"]);
+            //request.Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(order));
+            //await client.SendAsync(request);
         }
     }
 }
